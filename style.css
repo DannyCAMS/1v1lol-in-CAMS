@@ -1,0 +1,17 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background: #222;
+}
+
+#gameUI {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    color: white;
+    font-family: Arial;
+}
+
+#gameCanvas {
+    border: 1px solid #333;
+}
