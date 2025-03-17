@@ -149,4 +149,170 @@ function placeBlock() {
 }
 
 // Start the Game
-gameLoop();
+gameLoop(); 
+// Enhanced Game State
+const weapons = {
+    ar: { damage: 10, fireRate: 100, ammo: 30, speed: 15 },
+    shotgun: { damage: 25, fireRate: 800, ammo: 8, speed: 20 },
+    sniper: { damage: 75, fireRate: 1500, ammo: 5, speed: 30 }
+};
+let currentWeapon = 'ar';
+let isJumping = false;
+let velocityY = 0;
+const gravity = 0.8;
+
+// New Building Types
+const buildingTypes = {
+    wall: { width: 40, height: 40, cost: 10 },
+    floor: { width: 80, height: 20, cost: 15 },
+    ramp: { width: 40, height: 20, cost: 20 }
+};
+let currentBuilding = 'wall';
+
+// Resource Nodes (Trees)
+const resources = [
+    { x: 200, y: 400, type: 'tree', health: 50 }
+];
+
+// Enhanced Player Object
+const player = {
+    // ... (previous properties)
+    weaponAmmo: weapons.ar.ammo,
+    canJump: true,
+    isReloading: false
+};
+
+// Enhanced Key Handler
+document.addEventListener('keydown', (e) => {
+    const key = e.key.toLowerCase();
+    switch(key) {
+        case '1': currentBuilding = 'wall'; break;
+        case '2': currentBuilding = 'floor'; break;
+        case '3': currentBuilding = 'ramp'; break;
+        case 'r': reloadWeapon(); break;
+    }
+});
+
+// Jumping and Gravity
+function handlePhysics() {
+    velocityY += gravity;
+    player.y += velocityY;
+
+    // Ground collision
+    if (player.y + player.height > canvas.height - 50) {
+        player.y = canvas.height - 50 - player.height;
+        velocityY = 0;
+        isJumping = false;
+        player.canJump = true;
+    }
+}
+
+// Enhanced Shooting
+function shoot() {
+    if (player.weaponAmmo <= 0 || player.isReloading) return;
+
+    const weapon = weapons[currentWeapon];
+    player.weaponAmmo--;
+
+    // Shotgun spread
+    if (currentWeapon === 'shotgun') {
+        for (let i = 0; i < 5; i++) {
+            bullets.push(createBullet(weapon.speed + Math.random() * 3));
+        }
+    } else {
+        bullets.push(createBullet(weapon.speed));
+    }
+
+    // Auto-reload
+    if (player.weaponAmmo <= 0) reloadWeapon();
+}
+
+function createBullet(speed) {
+    return {
+        x: player.facing === 'right' ? player.x + player.width : player.x,
+        y: player.y + player.height/2,
+        dx: (player.facing === 'right' ? speed : -speed) + (Math.random() * 2 - 1),
+        dy: (Math.random() * 2 - 1),
+        damage: weapons[currentWeapon].damage
+    };
+}
+
+// Weapon Reloading
+function reloadWeapon() {
+    player.isReloading = true;
+    setTimeout(() => {
+        player.weaponAmmo = weapons[currentWeapon].ammo;
+        player.isReloading = false;
+    }, 1500);
+}
+
+// Enhanced Building
+function placeBlock() {
+    const building = buildingTypes[currentBuilding];
+    if (materials < building.cost) return;
+
+    const block = {
+        x: Math.floor((player.x + player.width/2) / 40) * 40,
+        y: Math.floor((player.y + player.height/2) / 40) * 40,
+        ...building,
+        type: currentBuilding
+    };
+
+    // Ramp orientation
+    if (currentBuilding === 'ramp') {
+        block.rotation = player.facing === 'right' ? 0 : 180;
+    }
+
+    blocks.push(block);
+    materials -= building.cost;
+}
+
+// Resource Collection
+function collectResources() {
+    resources.forEach((resource, index) => {
+        if (distance(player, resource) < 50 && resource.health > 0) {
+            resource.health -= 1;
+            if (resource.health <= 0) {
+                materials += 50;
+                resources.splice(index, 1);
+            }
+        }
+    });
+}
+
+// Enhanced Update Function
+function update() {
+    handlePhysics();
+    collectResources();
+
+    // Jumping
+    if ((keys.w || keys.space) && player.canJump) {
+        velocityY = -18;
+        isJumping = true;
+        player.canJump = false;
+    }
+
+    // ... (previous update code)
+}
+
+// Enhanced Drawing
+function draw() {
+    // ... (previous draw code)
+
+    // Draw Resources
+    ctx.fillStyle = '#2d5a27';
+    resources.forEach(resource => {
+        ctx.fillRect(resource.x, resource.y, 30, 60); // Simple tree
+    });
+
+    // Draw UI Elements
+    ctx.fillStyle = 'white';
+    ctx.font = '16px Arial';
+    ctx.fillText(`Weapon: ${currentWeapon} (${player.weaponAmmo})`, 10, 40);
+    ctx.fillText(`Building: ${currentBuilding}`, 10, 60);
+}
+
+// Utility Functions
+function distance(obj1, obj2) {
+    return Math.sqrt((obj1.x - obj2.x)**2 + (obj1.y - obj2.y)**2);
+}
