@@ -15,3 +15,7 @@ body {
 #gameCanvas {
     border: 1px solid #333;
 }
+#gameUI div {
+    margin: 5px 0;
+    text-shadow: 2px 2px 2px black;
+}
